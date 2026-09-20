@@ -100,6 +100,8 @@ MarketX uses a layered platform architecture:
 
 ### ASCII overview
 
+
+
 ```text
                 +----------------------+
                 |   Next.js Frontend   |
