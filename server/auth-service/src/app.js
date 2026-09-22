@@ -1,21 +1,27 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import dotenv from "dotenv";
 
-require("dotenv").config();
+import authRoutes from "./routes/auth.routes.js";
+
+dotenv.config();
 
 const app = express();
 
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
 
 app.get("/health", (req, res) => {
-  res.json({ status: "Auth service running" });
+  res.json({
+    success: true,
+    message: "Auth service running",
+  });
 });
 
-const PORT = process.env.PORT || 5001;
-
-app.listen(PORT, () => {
-  console.log(`Auth service running on port ${PORT}`);
-});
+// Auth routes
+app.use("/auth", authRoutes);
+app.use("/", authRoutes);
 
 export default app;

@@ -1,8 +1,11 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load environment variables from .env file
 
 // Create an instance of Express app
 const app = express();
@@ -20,19 +23,19 @@ app.disable("x-powered-by"); // Hide Express server information
 const services = [
  {
    route: "/auth",
-   target: "https://your-deployed-service.herokuapp.com/auth",
+   target: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
  },
  {
    route: "/users",
-   target: "https://your-deployed-service.herokuapp.com/users/",
+   target: process.env.USER_SERVICE_URL || "http://localhost:5002",
  },
  {
    route: "/chats",
-   target: "https://your-deployed-service.herokuapp.com/chats/",
+   target: process.env.CHAT_SERVICE_URL || "http://localhost:5003",
  },
  {
    route: "/payment",
-   target: "https://your-deployed-service.herokuapp.com/payment/",
+   target: process.env.PAYMENT_SERVICE_URL || "http://localhost:5004",
  },
  // Add more services as needed either deployed or locally.
 ];
