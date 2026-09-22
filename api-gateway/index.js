@@ -1,15 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load environment variables from .env file
 
 // Create an instance of Express app
 const app = express();
 
 
 // Middleware setup
-app.use(cors()); // Enable CORS
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    credentials: true,
+  })
+); // Enable CORS with credentials
 app.use(helmet()); // Add security headers
 app.use(morgan("combined")); // Log HTTP requests
 app.disable("x-powered-by"); // Hide Express server information
@@ -18,28 +26,35 @@ app.disable("x-powered-by"); // Hide Express server information
 
 // Define routes and corresponding microservices
 const services = [
- {
-   route: "/auth",
-   target: "https://your-deployed-service.herokuapp.com/auth",
- },
- {
-   route: "/users",
-   target: "https://your-deployed-service.herokuapp.com/users/",
- },
- {
-   route: "/chats",
-   target: "https://your-deployed-service.herokuapp.com/chats/",
- },
- {
-   route: "/payment",
-   target: "https://your-deployed-service.herokuapp.com/payment/",
- },
- // Add more services as needed either deployed or locally.
+  {
+    route: "/auth",
+    target: process.env.AUTH_SERVICE_URL || "http://localhost:5001",
+  },
+  {
+    route: "/users",
+    target: process.env.USER_SERVICE_URL || "http://localhost:5002",
+  },
+  {
+    route: "/listings",
+    target: process.env.LISTING_SERVICE_URL || "http://localhost:5003",
+  },
+  {
+    route: "/offers",
+    target: process.env.LISTING_SERVICE_URL || "http://localhost:5003",
+  },
+  {
+    route: "/chats",
+    target: process.env.CHAT_SERVICE_URL || "http://localhost:5004",
+  },
+  {
+    route: "/payment",
+    target: process.env.PAYMENT_SERVICE_URL || "http://localhost:5005",
+  },
 ];
 
 
 // Define rate limit constants
-const rateLimit = 20; // Max requests per minute
+const rateLimit = 300; // Max requests per minute
 const interval = 60 * 1000; // Time window in milliseconds (1 minute)
 
 // Object to store request counts for each IP address

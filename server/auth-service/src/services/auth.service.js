@@ -21,10 +21,18 @@ const register = async ({ email, password }) => {
     },
   });
 
-  return {
-    id: user.id,
-    email: user.email,
+  const token = generateToken({
+    userId: user.id,
     role: user.role,
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    token,
   };
 };
 
