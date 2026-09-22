@@ -56,3 +56,27 @@ npm run dev
 
 docker build -t marketx-user-service .
 docker run -p 5001:5001 marketx-user-service
+
+
+user-service/
+├── src/
+│   ├── config/
+│   │   └── db.js
+│   ├── controllers/
+│   │   └── user.controller.js
+│   ├── models/
+│   │   └── user.model.js
+│   ├── routes/
+│   │   └── user.routes.js
+│   ├── middleware/
+│   │   └── auth.middleware.js
+│   ├── services/
+│   │   └── user.service.js
+│   ├── utils/
+│   │   └── response.js
+│   └── server.js
+├── .env
+├── .gitignore
+├── package.json
+├── Dockerfile
+└── README.md
