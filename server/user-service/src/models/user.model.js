@@ -2,29 +2,37 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
     {
+        _id: {
+            type: String,
+        },
+
+        authId: {
+            type: String,
+            index: true,
+        },
+
         name: {
             type: String,
-            required: true,
+            default: "User",
             trim: true,
         },
 
         email: {
             type: String,
-            required: true,
-            unique: true,
+            sparse: true,
             lowercase: true,
             trim: true,
         },
 
         password: {
             type: String,
-            required: true,
-            minlength: 6,
+            required: false,
         },
 
         phone: {
             type: String,
             trim: true,
+            default: "",
         },
 
         avatar: {
@@ -49,13 +57,13 @@ const userSchema = new mongoose.Schema(
         },
 
         location: {
-            city: String,
-            state: String,
-            country: String,
+            type: mongoose.Schema.Types.Mixed,
+            default: "",
         },
     },
     {
         timestamps: true,
+        _id: false,
     }
 );
 

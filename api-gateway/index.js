@@ -106,28 +106,77 @@ app.use(rateLimitAndTimeout);
 
 // Set up proxy middleware for each microservice
 services.forEach(({ route, target }) => {
-  // Proxy options
   const proxyOptions = {
     target,
     changeOrigin: true,
+
     pathRewrite: {
       [`^${route}`]: "",
     },
+
+    cookieDomainRewrite: {
+      "*": "",
+    },
+
+    cookiePathRewrite: {
+      "*": "/",
+    },
+
+    on: {
+      proxyReq: (proxyReq, req) => {
+        console.log(
+          `[Gateway] ${req.method} ${req.originalUrl} → ${target}`
+        );
+      },
+
+      proxyRes: (proxyRes, req) => {
+        console.log(
+          `[Gateway] Response ${proxyRes.statusCode} ← ${req.originalUrl}`
+        );
+      },
+
+      error: (err, req, res) => {
+        console.error(`[Gateway] Proxy error: ${err.message}`);
+
+        if (!res.headersSent) {
+          res.status(502).json({
+            success: false,
+            message: "Bad Gateway",
+          });
+        }
+      },
+    },
   };
 
-  // Apply rate limiting and timeout middleware before proxying
-  app.use(route, rateLimitAndTimeout, createProxyMiddleware(proxyOptions));
+  app.use(
+    route,
+    createProxyMiddleware(proxyOptions)
+  );
 });
 
 
+// Notifications placeholder route until Notification Service is launched
+app.get("/notifications", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    notifications: [],
+  });
+});
+app.patch("/notifications/read-all", (_req, res) => {
+  res.status(200).json({ success: true });
+});
+app.patch("/notifications/:id/read", (_req, res) => {
+  res.status(200).json({ success: true });
+});
+
 // Handler for route-not-found
 app.use((_req, res) => {
- res.status(404).json({
-   code: 404,
-   status: "Error",
-   message: "Route not found.",
-   data: null,
- });
+  res.status(404).json({
+    code: 404,
+    status: "Error",
+    message: "Route not found.",
+    data: null,
+  });
 });
 
 
@@ -139,5 +188,5 @@ const PORT = process.env.PORT || 5000;
 
 // Start Express server
 app.listen(PORT, () => {
- console.log(`Gateway is running on port ${PORT}`);
+  console.log(`Gateway is running on port ${PORT}`);
 });

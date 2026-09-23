@@ -2,8 +2,11 @@
   "name": "user-service",
   "version": "1.0.0",
   "description": "User management microservice for the MarketX marketplace.",
-  "main": "index.js",
+  "main": "src/server.js",
+  "type": "module",
   "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
