@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import SearchBar from "@/components/search/SearchBar";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface User {
     id: string;
@@ -16,52 +17,9 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
 
-    const [user, setUser] = useState<User | null>(null);
-    const [loadingUser, setLoadingUser] = useState(true);
+    const { user, loading: loadingUser, logout: handleLogout } = useAuth();
 
     const profileRef = useRef<HTMLDivElement>(null);
-
-    /* --------------------------------
-       Fetch authenticated user
-    --------------------------------- */
-
-    useEffect(() => {
-        async function getCurrentUser() {
-            try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-                if (!apiUrl) {
-                    throw new Error(
-                        "NEXT_PUBLIC_API_URL is not configured"
-                    );
-                }
-
-                const response = await fetch(
-                    `${apiUrl}/auth/me`,
-                    {
-                        method: "GET",
-                        credentials: "include",
-                        cache: "no-store",
-                    }
-                );
-
-                if (!response.ok) {
-                    setUser(null);
-                    return;
-                }
-
-                const data = await response.json();
-
-                setUser(data.user ?? data);
-            } catch {
-                setUser(null);
-            } finally {
-                setLoadingUser(false);
-            }
-        }
-
-        getCurrentUser();
-    }, []);
 
     /* --------------------------------
        Close profile dropdown
@@ -92,34 +50,7 @@ export default function Navbar() {
         };
     }, []);
 
-    /* --------------------------------
-       Logout
-    --------------------------------- */
 
-    async function handleLogout() {
-        try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-            if (!apiUrl) {
-                throw new Error(
-                    "NEXT_PUBLIC_API_URL is not configured"
-                );
-            }
-
-            await fetch(`${apiUrl}/auth/logout`, {
-                method: "POST",
-                credentials: "include",
-            });
-        } catch (error) {
-            console.error("Logout failed:", error);
-        } finally {
-            setUser(null);
-            setProfileOpen(false);
-            setMobileOpen(false);
-
-            window.location.href = "/";
-        }
-    }
 
     return (
         <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/95 backdrop-blur-xl">

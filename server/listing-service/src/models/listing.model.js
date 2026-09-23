@@ -39,14 +39,12 @@ const listingSchema = new mongoose.Schema(
 
         condition: {
             type: String,
-            enum: ["new", "like-new", "good", "fair"],
-            required: true,
+            default: "good",
         },
 
         location: {
-            city: String,
-            state: String,
-            country: String,
+            type: mongoose.Schema.Types.Mixed,
+            default: "Location not specified",
         },
 
         status: {

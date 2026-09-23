@@ -6,6 +6,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
@@ -62,7 +63,8 @@ export const getMe = async (req, res) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || "your-super-secret-key";
+    const decoded = jwt.verify(token, secret);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -101,7 +103,9 @@ export const getMe = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
   res.status(200).json({

@@ -3,13 +3,14 @@ import ListingGrid from "@/components/listings/ListingGrid";
 import { CATEGORIES } from "@/lib/constants";
 import { Listing } from "@/components/listings/ListingCard";
 
+export const dynamic = "force-dynamic";
+
 async function getRecentListings(): Promise<Listing[]> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return [];
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     const res = await fetch(`${apiUrl}/listings?limit=8&sort=latest`, {
-      next: { revalidate: 30 },
+      cache: "no-store",
     });
 
     if (!res.ok) return [];
@@ -20,7 +21,11 @@ async function getRecentListings(): Promise<Listing[]> {
       id: item.id || item._id,
       title: item.title,
       price: item.price,
-      location: item.location ? `${item.location.city || ""}, ${item.location.state || ""}`.replace(/^, |, $/g, "") || item.location : "Location not specified",
+      location: item.location
+        ? typeof item.location === "object"
+          ? `${item.location.city || ""}, ${item.location.state || ""}`.replace(/^, |, $/g, "")
+          : item.location
+        : "Location not specified",
       imageUrl: item.images?.[0] || item.imageUrl || "",
       category: item.category,
       condition: item.condition,

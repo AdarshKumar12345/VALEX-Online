@@ -24,8 +24,7 @@ interface ListingDetails {
 
 async function getListing(id: string): Promise<ListingDetails | null> {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        if (!apiUrl) return null;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
         const res = await fetch(`${apiUrl}/listings/${encodeURIComponent(id)}`, {
             next: { revalidate: 15 },

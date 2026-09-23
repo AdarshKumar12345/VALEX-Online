@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
 
 import cookieParser from "cookie-parser";
 
@@ -21,6 +22,15 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+
+app.use(
+    "/uploads",
+    express.static(path.join(process.cwd(), "uploads"))
+);
+app.use(
+    "/listings/uploads",
+    express.static(path.join(process.cwd(), "uploads"))
+);
 
 app.get("/health", (req, res) => {
     res.json({

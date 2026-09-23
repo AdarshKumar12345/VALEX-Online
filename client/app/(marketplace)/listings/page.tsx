@@ -1,7 +1,10 @@
 import Link from "next/link";
 import ListingGrid from "@/components/listings/ListingGrid";
+import SortSelect from "@/components/listings/SortSelect";
 import { type Listing } from "@/components/listings/ListingCard";
 import { CATEGORIES, CONDITIONS, SORT_OPTIONS } from "@/lib/constants";
+
+export const dynamic = "force-dynamic";
 
 interface ListingsPageProps {
   searchParams: Promise<{
@@ -27,10 +30,7 @@ async function getListingsData(
   params: Record<string, string | undefined>
 ): Promise<ListingsResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) {
-      return { listings: [], total: 0, page: 1, pages: 1 };
-    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     const queryParams = new URLSearchParams();
     if (params.q) queryParams.set("q", params.q);
@@ -44,10 +44,12 @@ async function getListingsData(
     queryParams.set("limit", "12");
 
     const res = await fetch(`${apiUrl}/listings?${queryParams.toString()}`, {
-      next: { revalidate: 15 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
+      console.log("listing is not avilabel and res is not ok");
+
       return { listings: [], total: 0, page: 1, pages: 1 };
     }
 
@@ -77,7 +79,8 @@ async function getListingsData(
       page: Number(params.page || "1"),
       pages: data.pages ?? (Math.ceil(listings.length / 12) || 1),
     };
-  } catch {
+  } catch (error) {
+    console.log(error, "error in fetching listings");
     return { listings: [], total: 0, page: 1, pages: 1 };
   }
 }
@@ -113,8 +116,8 @@ export default async function ListingsPage({
                 {query
                   ? `Results for "${query}"`
                   : category
-                  ? `${category} Listings`
-                  : "Browse listings"}
+                    ? `${category} Listings`
+                    : "Browse listings"}
               </h1>
 
               <p className="mt-2 text-sm text-neutral-500">
@@ -247,11 +250,10 @@ function FilterPanel({
                 minPrice,
                 maxPrice,
               })}
-              className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${
-                !category
-                  ? "bg-black font-semibold text-white"
-                  : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
-              }`}
+              className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${!category
+                ? "bg-black font-semibold text-white"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
+                }`}
             >
               All Categories
             </Link>
@@ -269,11 +271,10 @@ function FilterPanel({
                     minPrice,
                     maxPrice,
                   })}
-                  className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${
-                    active
-                      ? "bg-black font-semibold text-white"
-                      : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
-                  }`}
+                  className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${active
+                    ? "bg-black font-semibold text-white"
+                    : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
+                    }`}
                 >
                   {cat.name}
                 </Link>
@@ -297,11 +298,10 @@ function FilterPanel({
                 minPrice,
                 maxPrice,
               })}
-              className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${
-                !condition
-                  ? "bg-black font-semibold text-white"
-                  : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
-              }`}
+              className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${!condition
+                ? "bg-black font-semibold text-white"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
+                }`}
             >
               Any Condition
             </Link>
@@ -319,11 +319,10 @@ function FilterPanel({
                     minPrice,
                     maxPrice,
                   })}
-                  className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${
-                    active
-                      ? "bg-black font-semibold text-white"
-                      : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
-                  }`}
+                  className={`block rounded-lg px-2.5 py-1.5 text-xs transition ${active
+                    ? "bg-black font-semibold text-white"
+                    : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
+                    }`}
                 >
                   {cond}
                 </Link>
@@ -389,40 +388,7 @@ function FilterPanel({
   );
 }
 
-function SortSelect({
-  value,
-  currentParams,
-}: {
-  value: string;
-  currentParams: Record<string, string | undefined>;
-}) {
-  return (
-    <form action="/listings" method="GET" className="flex items-center gap-2">
-      {Object.entries(currentParams).map(([k, v]) => {
-        if (k === "sort" || !v) return null;
-        return <input key={k} type="hidden" name={k} value={v} />;
-      })}
 
-      <label htmlFor="sort-select" className="text-xs font-medium text-neutral-500">
-        Sort:
-      </label>
-
-      <select
-        id="sort-select"
-        name="sort"
-        defaultValue={value}
-        onChange={(e) => e.currentTarget.form?.submit()}
-        className="rounded-xl border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium outline-none focus:border-black"
-      >
-        {SORT_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </form>
-  );
-}
 
 function Pagination({
   currentPage,
@@ -440,11 +406,10 @@ function Pagination({
     <div className="mt-12 flex items-center justify-center gap-2">
       <Link
         href={buildUrl({ ...currentParams, page: String(prevPage) })}
-        className={`rounded-xl border border-neutral-200 px-4 py-2 text-xs font-semibold transition ${
-          currentPage === 1
-            ? "pointer-events-none opacity-40"
-            : "hover:border-black"
-        }`}
+        className={`rounded-xl border border-neutral-200 px-4 py-2 text-xs font-semibold transition ${currentPage === 1
+          ? "pointer-events-none opacity-40"
+          : "hover:border-black"
+          }`}
       >
         ← Previous
       </Link>
@@ -455,11 +420,10 @@ function Pagination({
 
       <Link
         href={buildUrl({ ...currentParams, page: String(nextPage) })}
-        className={`rounded-xl border border-neutral-200 px-4 py-2 text-xs font-semibold transition ${
-          currentPage === totalPages
-            ? "pointer-events-none opacity-40"
-            : "hover:border-black"
-        }`}
+        className={`rounded-xl border border-neutral-200 px-4 py-2 text-xs font-semibold transition ${currentPage === totalPages
+          ? "pointer-events-none opacity-40"
+          : "hover:border-black"
+          }`}
       >
         Next →
       </Link>

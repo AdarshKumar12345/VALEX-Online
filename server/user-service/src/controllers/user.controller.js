@@ -6,15 +6,15 @@ import {
 
 export const getMe = async (req, res) => {
     try {
-        const user = await getUserById(req.user.userId);
+        const user = await getUserById(req.user.userId, req.user.email);
 
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ success: false, message: "User not found" });
         }
 
         res.status(200).json({ success: true, user });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
