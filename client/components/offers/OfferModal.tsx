@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 interface OfferModalProps {
   isOpen: boolean;
   onClose: () => void;
+  sellerId: string;
   listingId: string;
   listingTitle: string;
   listingPrice: number;
@@ -19,6 +20,7 @@ interface OfferModalProps {
 export default function OfferModal({
   isOpen,
   onClose,
+  sellerId,
   listingId,
   listingTitle,
   listingPrice,
@@ -46,6 +48,9 @@ export default function OfferModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listingId,
+          listingTitle,
+          listingPrice,
+          sellerId,
           amount: offerNum,
           message: message.trim(),
         }),

@@ -247,6 +247,7 @@ export default function ListingDetailClient({
       <OfferModal
         isOpen={isOfferOpen}
         onClose={() => setIsOfferOpen(false)}
+        sellerId={listing.seller.id}
         listingId={listing.id}
         listingTitle={listing.title}
         listingPrice={listing.price}

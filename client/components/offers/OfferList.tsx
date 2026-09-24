@@ -1,24 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OfferCard, { Offer } from "./OfferCard";
 
 interface OfferListProps {
-  initialOffers: Offer[];
-  isSeller: boolean;
+  initialOffers?: Offer[];
+  isSeller?: boolean;
   emptyMessage?: string;
 }
 
 export default function OfferList({
-  initialOffers,
+  initialOffers = [],
   isSeller,
   emptyMessage = "No offers found.",
 }: OfferListProps) {
-  const [offers, setOffers] = useState<Offer[]>(initialOffers);
+  const [offers, setOffers] = useState<Offer[]>(
+    Array.isArray(initialOffers) ? initialOffers : []
+  );
 
-  function handleStatusChange(id: string, newStatus: Offer["status"]) {
+  useEffect(() => {
+    setOffers(Array.isArray(initialOffers) ? initialOffers : []);
+  }, [initialOffers]);
+
+  function handleStatusChange(
+    id: string,
+    newStatus: Offer["status"]
+  ) {
     setOffers((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
+      prev.map((offer) =>
+        offer.id === id
+          ? { ...offer, status: newStatus }
+          : offer
+      )
     );
   }
 
