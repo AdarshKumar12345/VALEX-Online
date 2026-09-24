@@ -139,7 +139,7 @@ export default function ListingDetailClient({
               {/* Action Buttons */}
               <div className="mt-7 space-y-3">
                 <Link
-                  href={`/chat?listing=${encodeURIComponent(listing.id)}`}
+                  href={`/chat?listing=${encodeURIComponent(listing.id)}&recipient=${encodeURIComponent(listing.seller.id)}`}
                   className="flex h-12 w-full items-center justify-center rounded-xl bg-black px-5 text-sm font-bold text-white transition hover:bg-neutral-800 shadow-sm"
                 >
                   💬 Message Seller

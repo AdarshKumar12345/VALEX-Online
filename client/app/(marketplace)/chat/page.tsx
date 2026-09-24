@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiFetch } from "@/lib/api";
+import { useChatSocket } from "@/hooks/useChatSocket";
 import ConversationList from "@/components/chat/ConversationList";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { Conversation } from "@/components/chat/ConversationItem";
@@ -21,6 +22,61 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [partnerTyping, setPartnerTyping] = useState(false);
+
+  // Real-time WebSocket connection
+  const { emitTyping } = useChatSocket({
+    conversationId: selectedConv?.id,
+    receiverId: selectedConv?.participantId,
+    onNewMessage: (newMsg) => {
+      if (selectedConv && (newMsg as any).conversationId === selectedConv.id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+        apiFetch(`/chats/${encodeURIComponent(selectedConv.id)}/read`, { method: "PATCH" }).catch(() => {});
+      }
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === (newMsg as any).conversationId || c.id === selectedConv?.id) {
+            return {
+              ...c,
+              lastMessage: newMsg.text,
+              lastMessageAt: newMsg.createdAt,
+              unreadCount: selectedConv?.id === c.id ? 0 : (c.unreadCount || 0) + 1,
+            };
+          }
+          return c;
+        })
+      );
+    },
+    onTyping: (data) => {
+      if (selectedConv && data.conversationId === selectedConv.id && data.userId !== user?.id) {
+        setPartnerTyping(true);
+      }
+    },
+    onStopTyping: (data) => {
+      if (selectedConv && data.conversationId === selectedConv.id) {
+        setPartnerTyping(false);
+      }
+    },
+    onNotification: (notif) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === notif.conversationId) {
+            return {
+              ...c,
+              lastMessage: notif.content || notif.text,
+              lastMessageAt: notif.createdAt,
+              unreadCount: (c.unreadCount || 0) + 1,
+            };
+          }
+          return c;
+        })
+      );
+    },
+  });
 
   // Load conversations
   useEffect(() => {
@@ -74,6 +130,7 @@ export default function ChatPage() {
     const convId = selectedConv.id;
     let isSubscribed = true;
 
+    // Load messages and mark as read
     async function loadMessages() {
       try {
         setLoadingMessages(true);
@@ -88,7 +145,12 @@ export default function ChatPage() {
     }
 
     loadMessages();
-    const interval = setInterval(loadMessages, 8000); // 8s polling fallback
+    apiFetch(`/chats/${encodeURIComponent(convId)}/read`, { method: "PATCH" }).catch(() => {});
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+    );
+
+    const interval = setInterval(loadMessages, 3500); // 3.5s polling fallback
 
     return () => {
       isSubscribed = false;
@@ -182,7 +244,9 @@ export default function ChatPage() {
               conversation={selectedConv}
               messages={messages}
               currentUserId={user?.id}
+              isTyping={partnerTyping}
               onSendMessage={handleSendMessage}
+              onTyping={emitTyping}
               onBackMobile={() => setSelectedConv(null)}
             />
           ) : (

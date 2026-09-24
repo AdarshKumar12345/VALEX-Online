@@ -8,7 +8,7 @@ A scalable, production-style second-hand marketplace inspired by the C2C marketp
 
 MarketX is a C2C (consumer-to-consumer) marketplace for buying and selling second-hand goods. The system is designed to demonstrate modern backend architecture patterns, distributed service design, AI-assisted workflows, real-time communication, and cloud-native deployment practices.
 
-The project aims to provide a contributor-friendly environment where developers can collaborate across multiple service stacks, including Java/Spring Boot, Node.js, Python, and frontend frameworks, while maintaining a clear service boundary model.
+The project aims to provide a contributor-friendly environment where developers can collaborate across modern service stacks, including Node.js (Express), Python (for AI and analytics), and modern frontend frameworks (Next.js), while maintaining a clear service boundary model.
 
 This repository is intended to serve as a learning platform and a foundation for an advanced marketplace implementation. It is not a finished production marketplace yet; instead, it follows a staged architecture that can grow from an initial gateway scaffold into a fully distributed platform.
 
@@ -116,15 +116,14 @@ MarketX uses a layered platform architecture:
         |                                     |
         v                                     v
 +-------------------+              +----------------------+
-| Spring Boot       |              | Node.js / Python     |
-| Auth / User /     |              | Chat / Notification  |
-| Listing / Offer / |              | Search / AI /        |
-| Order / Payment / |              | Recommendation /     |
-| Review / Admin    |              | Moderation /        |
-+-------------------+              | Analytics / etc.     |
-                                     +----------------------+
-                                               |
-                                               v
+| Node.js (Express) |              | Python / Node.js     |
+| Auth / User /     |              | AI / Recommendation  |
+| Listing / Offer / |              | Moderation /         |
+| Order / Payment / |              | Analytics /          |
+| Review / Chat     |              | Notification / etc.  |
++-------------------+              +----------------------+
+                                              |
+                                              v
                  +--------------------+--------------------+
                  | PostgreSQL | Redis | Kafka/RabbitMQ    |
                  | OpenSearch | Object Storage            |
@@ -137,13 +136,13 @@ MarketX uses a layered platform architecture:
 flowchart TD
     U[User] --> F[Next.js Frontend]
     F --> G[API Gateway\nNode.js + Express]
-    G --> A[Auth Service\nSpring Boot]
-    G --> U1[User Service\nSpring Boot]
-    G --> L[Listing Service\nSpring Boot]
-    G --> O[Offer Service\nSpring Boot]
-    G --> OR[Order Service\nSpring Boot]
-    G --> P[Payment Service\nSpring Boot]
-    G --> R[Review Service\nSpring Boot]
+    G --> A[Auth Service\nNode.js + Express]
+    G --> U1[User Service\nNode.js + Express]
+    G --> L[Listing Service\nNode.js + Express]
+    G --> O[Offer Service\nNode.js + Express]
+    G --> OR[Order Service\nNode.js + Express]
+    G --> P[Payment Service\nNode.js + Express]
+    G --> R[Review Service\nNode.js + Express]
     G --> C[Chat Service\nNode.js + Socket.IO]
     G --> N[Notification Service\nNode.js/Python]
     G --> S[Search Service\nOpenSearch]
@@ -173,15 +172,15 @@ flowchart TD
 | --- | --- | --- | --- |
 | `frontend` | Next.js + TypeScript | User-facing marketplace application | 3000 |
 | `api-gateway` | Node.js + Express | Single entry point, routing, rate limiting, auth checks, proxying | 5000 |
-| `auth-service` | Spring Boot | Authentication, JWT, user sessions, OAuth-ready flows | 8081 |
-| `user-service` | Spring Boot | User profile, seller verification, account management | 8082 |
-| `listing-service` | Spring Boot | Listings, categories, inventory lifecycle | 8083 |
-| `offer-service` | Spring Boot | Negotiation, offer creation, offer workflow | 8084 |
-| `order-service` | Spring Boot | Order placement, fulfillment status, transaction tracking | 8085 |
-| `payment-service` | Spring Boot | Payment orchestration and settlement flows | 8086 |
-| `review-service` | Spring Boot | Ratings, reviews, and trust signals | 8087 |
-| `chat-service` | Node.js + Socket.IO | Real-time buyer/seller messaging | 5001 |
-| `notification-service` | Node.js or Python | Push/email/in-app notifications | 5002 |
+| `auth-service` | Node.js + Express + Prisma | Authentication, JWT, user sessions, OAuth-ready flows | 5001 |
+| `user-service` | Node.js + Express + Prisma | User profile, seller verification, account management | 5002 |
+| `listing-service` | Node.js + Express | Listings, categories, inventory lifecycle | 5003 |
+| `chat-service` | Node.js + Socket.IO | Real-time buyer/seller messaging | 5004 |
+| `offer-service` | Node.js + Express | Negotiation, offer creation, offer workflow | 5005 |
+| `order-service` | Node.js + Express | Order placement, fulfillment status, transaction tracking | 5006 |
+| `payment-service` | Node.js + Express | Payment orchestration and settlement flows | 5007 |
+| `review-service` | Node.js + Express | Ratings, reviews, and trust signals | 5008 |
+| `notification-service` | Node.js or Python | Push/email/in-app notifications | 5009 |
 | `search-service` | OpenSearch | Full-text and semantic search indexing | 9200 |
 | `recommendation-service` | Python | Similar-item and personal recommendation logic | 8001 |
 | `ai-service` | Python + FastAPI + LangChain + LangGraph | AI workflows and assistants | 8002 |
@@ -200,19 +199,19 @@ marketplace/
 │   ├── api-gateway/
 │   │   └── Node.js + Express
 │   ├── auth-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── user-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── listing-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── offer-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── order-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── payment-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── review-service/
-│   │   └── Spring Boot
+│   │   └── Node.js + Express
 │   ├── chat-service/
 │   │   └── Node.js + Socket.IO
 │   ├── notification-service/
@@ -399,10 +398,10 @@ The current gateway already contains basic protection patterns such as CORS, Hel
 Before contributing, make sure the following tools are available:
 
 - Git
-- Node.js and npm
-- Java JDK (for Spring Boot services)
-- Python 3.x
+- Node.js (v18+ or LTS) and npm / pnpm
+- Python 3.x (for AI/ML services)
 - Docker and Docker Compose
+- PostgreSQL & Redis
 - Optional: Kubernetes tooling (`kubectl`, `helm`) for deployment-related work
 
 ### Environment variables
@@ -459,9 +458,6 @@ node index.js
 Each future service will typically follow a pattern like:
 
 ```bash
-# Spring Boot service
-./gradlew bootRun
-
 # Node.js service
 npm install
 npm run dev
@@ -595,26 +591,26 @@ Follow this pattern when building a new microservice:
 7. Add health checks and basic observability.
 8. Add tests for the service’s contract and business logic.
 
-### Spring Boot contributor guidance
+### Node.js microservice contributor guidance
 
-If you are working with Spring Boot, keep the following in mind:
+If you are working on a Node.js microservice, keep the following in mind:
 
 - Keep domain logic inside the service boundary.
 - Avoid tightly coupling the service to the gateway.
-- Prefer explicit DTOs and service contracts over hidden shared state.
-- Add environment-based configuration rather than hardcoded values.
-- Keep the service independently runnable.
-- Document ports and endpoints clearly.
-- Use consistent naming and package organization.
+- Prefer explicit request/response schemas and service contracts over hidden shared state.
+- Add environment-based configuration (`.env`) rather than hardcoded values.
+- Keep each service independently runnable with its own `package.json` and scripts.
+- Document ports, environment variables, and endpoints clearly.
+- Use consistent naming and modular project organization.
 
-For a Spring Boot microservice, a safe pattern is:
+For a Node.js / Express microservice, a safe pattern is:
 
-- `controller/` for HTTP endpoints
-- `service/` for business logic
-- `repository/` for persistence access
-- `model/` or `entity/` for domain classes
-- `config/` for app config and security settings
-- `dto/` for request/response contracts
+- `controllers/` for HTTP endpoint request handling and responses
+- `services/` for core business logic
+- `models/` or `prisma/` for database schema and data access layers
+- `routes/` for Express route definitions
+- `middlewares/` for auth verification, validation, error handling, etc.
+- `config/` for app configuration and database connections
 
 ## 27. Pull Request Guidelines
 
@@ -651,8 +647,7 @@ General guidance:
 
 Language-specific style should follow the conventions of the relevant stack:
 
-- Java/Spring Boot: idiomatic Spring conventions and clean package boundaries
-- Node.js: ESLint-based style, clear route structure, secure middleware patterns
+- Node.js: ESLint-based style, clean modular architecture (controllers/services/models), async/await error handling, secure middleware patterns
 - Python: PEP 8 compliance, type hints where appropriate, clear async boundaries
 - Frontend: maintainable component design, proper TypeScript usage, shared API wrappers
 
@@ -794,16 +789,16 @@ npm install
 node index.js
 ```
 
-### For a friend working on a Spring Boot microservice
+### For a contributor working on a Node.js microservice
 
-When adding or modifying a Spring Boot microservice:
+When adding or modifying a Node.js microservice:
 
 - keep the service isolated from the gateway logic
-- define clear endpoints and DTOs
+- define clear endpoints, request validation, and data models
 - test locally before integrating with the gateway
 - document the service port and route prefix
 - avoid changing shared contracts without informing other contributors
-- keep database changes explicit and reviewable
+- keep database migrations/schemas explicit and reviewable
 - run the service independently before connecting it to the broader system
 
 This keeps the whole project easier to debug and safer to evolve as the architecture grows.
