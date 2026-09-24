@@ -40,7 +40,7 @@ const services = [
   },
   {
     route: "/offers",
-    target: process.env.LISTING_SERVICE_URL || "http://localhost:5003",
+    target: process.env.OFFER_SERVICE_URL || "http://localhost:5005",
   },
   {
     route: "/chats",
@@ -48,7 +48,7 @@ const services = [
   },
   {
     route: "/payment",
-    target: process.env.PAYMENT_SERVICE_URL || "http://localhost:5005",
+    target: process.env.PAYMENT_SERVICE_URL || "http://localhost:5006",
   },
 ];
 

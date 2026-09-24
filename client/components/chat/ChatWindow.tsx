@@ -4,13 +4,16 @@ import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import MessageBubble, { Message } from "./MessageBubble";
 import MessageInput from "./MessageInput";
+import TypingIndicator from "./TypingIndicator";
 import { Conversation } from "./ConversationItem";
 
 interface ChatWindowProps {
   conversation: Conversation;
   messages: Message[];
   currentUserId?: string;
+  isTyping?: boolean;
   onSendMessage: (text: string) => Promise<void>;
+  onTyping?: () => void;
   onBackMobile?: () => void;
 }
 
@@ -18,7 +21,9 @@ export default function ChatWindow({
   conversation,
   messages,
   currentUserId,
+  isTyping,
   onSendMessage,
+  onTyping,
   onBackMobile,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -95,11 +100,14 @@ export default function ChatWindow({
             />
           ))
         )}
+        {isTyping && (
+          <TypingIndicator name={conversation.participantName} />
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
-      <MessageInput onSend={onSendMessage} />
+      <MessageInput onSend={onSendMessage} onTyping={onTyping} />
     </div>
   );
 }

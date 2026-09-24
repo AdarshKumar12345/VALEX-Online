@@ -8,6 +8,8 @@ import { formatPrice, formatDate } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+
 export interface Offer {
   id: string;
   listingId: string;
@@ -24,7 +26,7 @@ export interface Offer {
 
 interface OfferCardProps {
   offer: Offer;
-  isSeller: boolean;
+  isSeller?: boolean;
   onStatusChange?: (id: string, newStatus: Offer["status"]) => void;
 }
 
@@ -33,13 +35,20 @@ export default function OfferCard({
   isSeller,
   onStatusChange,
 }: OfferCardProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const { success, error } = useToast();
+
+  const offerId = offer.id || (offer as any)._id;
+
+  // Determine whether the logged-in user is the seller or the buyer of this specific offer
+  const isUserSeller = user ? user.id === offer.sellerId : (isSeller ?? false);
+  const isUserBuyer = user ? user.id === offer.buyerId : !(isSeller ?? false);
 
   async function handleAction(status: "accepted" | "rejected" | "cancelled") {
     try {
       setLoading(true);
-      await apiFetch(`/offers/${encodeURIComponent(offer.id)}`, {
+      await apiFetch(`/offers/${encodeURIComponent(offerId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -47,7 +56,7 @@ export default function OfferCard({
 
       success(`Offer ${status} successfully.`);
       if (onStatusChange) {
-        onStatusChange(offer.id, status);
+        onStatusChange(offerId, status);
       }
     } catch (err) {
       error(err instanceof Error ? err.message : "Failed to update offer.");
@@ -56,34 +65,40 @@ export default function OfferCard({
     }
   }
 
-  const badgeVariant = {
+  const statusKey = (offer.status || "pending").toLowerCase();
+  const badgeVariant = ({
     pending: "warning",
     accepted: "success",
     rejected: "dark",
     expired: "outline",
     cancelled: "outline",
-  }[offer.status] as "warning" | "success" | "dark" | "outline";
+  }[statusKey] || "outline") as "warning" | "success" | "dark" | "outline";
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-5 transition hover:border-neutral-300">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/listings/${offer.listingId}`}
               className="font-bold text-sm text-black hover:underline"
             >
-              {offer.listingTitle}
+              {offer.listingTitle || "Listing"}
             </Link>
-            <Badge variant={badgeVariant}>{offer.status}</Badge>
+            <Badge variant={badgeVariant}>{offer.status || "pending"}</Badge>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+              {isUserSeller ? "Received Offer" : "Sent Offer"}
+            </span>
           </div>
           <p className="mt-1 text-xs text-neutral-500">
-            {isSeller ? `From: ${offer.buyerName}` : `Listed at: ${formatPrice(offer.listingPrice)}`} • {formatDate(offer.createdAt)}
+            {isUserSeller
+              ? `From: ${offer.buyerName || "Buyer"}`
+              : `Listed at: ${formatPrice(offer.listingPrice || 0)}`} • {formatDate(offer.createdAt)}
           </p>
         </div>
 
         <div className="text-left sm:text-right">
-          <p className="text-base font-bold text-black">{formatPrice(offer.amount)}</p>
+          <p className="text-base font-bold text-black">{formatPrice(offer.amount || 0)}</p>
           <p className="text-[11px] text-neutral-400">Offered amount</p>
         </div>
       </div>
@@ -94,10 +109,10 @@ export default function OfferCard({
         </p>
       )}
 
-      {/* Action Buttons */}
-      {offer.status === "pending" && (
+      {/* Action Buttons - Only allow the seller to Accept/Decline, and the buyer to Cancel */}
+      {statusKey === "pending" && (
         <div className="mt-4 flex items-center justify-end gap-2 border-t border-neutral-100 pt-3">
-          {isSeller ? (
+          {isUserSeller && (
             <>
               <Button
                 size="sm"
@@ -116,7 +131,9 @@ export default function OfferCard({
                 Accept Offer
               </Button>
             </>
-          ) : (
+          )}
+
+          {isUserBuyer && !isUserSeller && (
             <Button
               size="sm"
               variant="outline"

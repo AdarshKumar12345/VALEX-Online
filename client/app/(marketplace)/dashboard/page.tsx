@@ -36,7 +36,10 @@ export default function DashboardPage() {
         const myList = myListingsRes?.listings || myListingsRes || [];
         const savedList = savedRes?.listings || savedRes || [];
         const chatsList = chatsRes?.chats || chatsRes || [];
-        const offersList: Offer[] = offersRes?.offers || offersRes || [];
+        const offersList: Offer[] =
+          offersRes?.offers ||
+          offersRes?.data ||
+          (Array.isArray(offersRes) ? offersRes : []);
 
         setRecentListings(myList.slice(0, 4));
         setOffers(offersList);
@@ -222,8 +225,7 @@ export default function DashboardPage() {
             ) : (
               <OfferList
                 initialOffers={offers}
-                isSeller={true}
-                emptyMessage="No offers received yet."
+                emptyMessage="No offers sent or received yet."
               />
             )}
           </section>

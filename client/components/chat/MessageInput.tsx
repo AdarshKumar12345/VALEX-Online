@@ -4,10 +4,11 @@ import React, { useState } from "react";
 
 interface MessageInputProps {
   onSend: (text: string) => Promise<void>;
+  onTyping?: () => void;
   disabled?: boolean;
 }
 
-export default function MessageInput({ onSend, disabled }: MessageInputProps) {
+export default function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -25,6 +26,11 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     }
   }
 
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setText(e.target.value);
+    if (onTyping) onTyping();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -36,7 +42,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t border-neutral-200 bg-white p-3">
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="Type a message... (Press Enter to send)"
         rows={1}
