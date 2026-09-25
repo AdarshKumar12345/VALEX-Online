@@ -26,11 +26,22 @@ export default function ChatWindow({
   onTyping,
   onBackMobile,
 }: ChatWindowProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const prevCountRef = useRef(0);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Scroll to bottom on initial conversation load or when new messages arrive
+    const isNewMessage = safeMessages.length !== prevCountRef.current;
+    prevCountRef.current = safeMessages.length;
+
+    if (isNewMessage) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [safeMessages.length, conversation.id]);
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -56,13 +67,13 @@ export default function ChatWindow({
                 className="h-full w-full rounded-full object-cover"
               />
             ) : (
-              conversation.participantName.charAt(0).toUpperCase()
+              conversation.participantName?.charAt(0).toUpperCase() || "U"
             )}
           </div>
 
           <div className="min-w-0">
             <h2 className="truncate text-sm font-bold text-black">
-              {conversation.participantName}
+              {conversation.participantName || "User"}
             </h2>
             {conversation.listingId && (
               <Link
@@ -86,13 +97,13 @@ export default function ChatWindow({
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {messages.length === 0 ? (
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {safeMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-xs text-neutral-400">
             Send a message to start the conversation.
           </div>
         ) : (
-          messages.map((msg) => (
+          safeMessages.map((msg) => (
             <MessageBubble
               key={msg.id}
               message={msg}
@@ -103,7 +114,6 @@ export default function ChatWindow({
         {isTyping && (
           <TypingIndicator name={conversation.participantName} />
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
