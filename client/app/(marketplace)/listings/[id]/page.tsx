@@ -22,6 +22,7 @@ interface ListingDetails {
     };
 }
 
+
 async function getListing(id: string): Promise<ListingDetails | null> {
     try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

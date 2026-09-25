@@ -49,7 +49,7 @@ export default function ConversationItem({
             className="h-full w-full rounded-full object-cover"
           />
         ) : (
-          conversation.participantName.charAt(0).toUpperCase()
+          conversation.participantName?.charAt(0).toUpperCase() || "U"
         )}
       </div>
 
@@ -57,7 +57,7 @@ export default function ConversationItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-1">
           <p className="truncate text-xs font-bold">
-            {conversation.participantName}
+            {conversation.participantName || "User"}
           </p>
           {conversation.lastMessageAt && (
             <span

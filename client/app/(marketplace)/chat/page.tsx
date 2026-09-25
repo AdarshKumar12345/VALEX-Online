@@ -29,16 +29,17 @@ export default function ChatPage() {
     conversationId: selectedConv?.id,
     receiverId: selectedConv?.participantId,
     onNewMessage: (newMsg) => {
-      if (selectedConv && (newMsg as any).conversationId === selectedConv.id) {
+      if (selectedConv && ((newMsg as any).conversationId === selectedConv.id || !(newMsg as any).conversationId)) {
         setMessages((prev) => {
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
+          const current = Array.isArray(prev) ? prev : [];
+          if (current.some((m) => m.id === newMsg.id)) return current;
+          return [...current, newMsg];
         });
-        apiFetch(`/chats/${encodeURIComponent(selectedConv.id)}/read`, { method: "PATCH" }).catch(() => {});
+        apiFetch(`/chats/${encodeURIComponent(selectedConv.id)}/read`, { method: "PATCH" }).catch(() => { });
       }
 
       setConversations((prev) =>
-        prev.map((c) => {
+        (Array.isArray(prev) ? prev : []).map((c) => {
           if (c.id === (newMsg as any).conversationId || c.id === selectedConv?.id) {
             return {
               ...c,
@@ -63,7 +64,7 @@ export default function ChatPage() {
     },
     onNotification: (notif) => {
       setConversations((prev) =>
-        prev.map((c) => {
+        (Array.isArray(prev) ? prev : []).map((c) => {
           if (c.id === notif.conversationId) {
             return {
               ...c,
@@ -84,32 +85,49 @@ export default function ChatPage() {
       try {
         setLoading(true);
         const data = await apiFetch<any>("/chats").catch(() => ({ chats: [] }));
-        const list: Conversation[] = data.chats || data.data || (Array.isArray(data) ? data : []);
+        const list: Conversation[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.chats)
+            ? data.chats
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
 
-        // If user navigated with ?listing= or ?recipient= and conversation doesn't exist yet, create or find it
-        if ((listingParam || recipientParam) && !list.find((c) => c.listingId === listingParam)) {
-          try {
-            const newConvRes = await apiFetch<any>("/chats", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                listingId: listingParam,
-                recipientId: recipientParam,
-              }),
-            });
-            const created = newConvRes.chat || newConvRes.data || newConvRes;
-            if (created && created.id) {
-              list.unshift(created);
-              setSelectedConv(created);
+        // If user navigated with ?listing= or ?recipient=
+        if (listingParam || recipientParam) {
+          const existing = list.find(
+            (c) =>
+              (listingParam && c.listingId === listingParam) ||
+              (recipientParam && c.participantId === recipientParam)
+          );
+
+          if (existing) {
+            setSelectedConv(existing);
+          } else {
+            try {
+              const newConvRes = await apiFetch<any>("/chats", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  listingId: listingParam || undefined,
+                  recipientId: recipientParam || undefined,
+                  participantId: recipientParam || undefined,
+                }),
+              });
+              const created = newConvRes.chat || (typeof newConvRes.data === "object" ? newConvRes.data : null) || newConvRes;
+              if (created && created.id) {
+                list.unshift(created);
+                setSelectedConv(created);
+              }
+            } catch (err) {
+              console.error("Failed to initialize conversation:", err);
             }
-          } catch {
-            // fallback
           }
         }
 
         setConversations(list);
 
-        if (!selectedConv && list.length > 0) {
+        if (!selectedConv && !listingParam && !recipientParam && list.length > 0) {
           setSelectedConv(list[0]);
         }
       } finally {
@@ -131,23 +149,55 @@ export default function ChatPage() {
     let isSubscribed = true;
 
     // Load messages and mark as read
-    async function loadMessages() {
+    async function loadMessages(isInitial = false) {
       try {
-        setLoadingMessages(true);
-        const data = await apiFetch<any>(`/chats/${encodeURIComponent(convId)}/messages`).catch(() => ({ messages: [] }));
-        if (isSubscribed) {
-          const list: Message[] = data.messages || data.data || (Array.isArray(data) ? data : []);
-          setMessages(list);
+        if (isInitial) setLoadingMessages(true);
+
+        const data = await apiFetch<any>(
+          `/chats/${encodeURIComponent(convId)}/messages`
+        ).catch(() => null);
+
+        if (isSubscribed && data) {
+          const rawList = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.messages)
+              ? data.messages
+              : Array.isArray(data?.data?.messages)
+                ? data.data.messages
+                : Array.isArray(data?.data)
+                  ? data.data
+                  : [];
+
+          const formatted: Message[] = rawList.map((m: any) => ({
+            id: m.id || m._id || String(Math.random()),
+            senderId: m.senderId || m.sender?.id || m.sender?._id || "",
+            senderName: m.senderName || m.sender?.name,
+            text: m.text || m.content || "",
+            createdAt: m.createdAt || new Date().toISOString(),
+          }));
+
+          setMessages((prev) => {
+            // Only update if list length or last message changed to prevent redundant re-renders
+            if (
+              prev.length === formatted.length &&
+              prev[prev.length - 1]?.id === formatted[formatted.length - 1]?.id
+            ) {
+              return prev;
+            }
+            return formatted;
+          });
         }
       } finally {
-        if (isSubscribed) setLoadingMessages(false);
+        if (isSubscribed && isInitial) {
+          setLoadingMessages(false);
+        }
       }
     }
 
-    loadMessages();
-    apiFetch(`/chats/${encodeURIComponent(convId)}/read`, { method: "PATCH" }).catch(() => {});
+    loadMessages(true);
+    apiFetch(`/chats/${encodeURIComponent(convId)}/read`, { method: "PATCH" }).catch(() => { });
     setConversations((prev) =>
-      prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+      (Array.isArray(prev) ? prev : []).map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
     );
 
     const interval = setInterval(loadMessages, 3500); // 3.5s polling fallback
@@ -170,25 +220,37 @@ export default function ChatPage() {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, optimisticMsg]);
+    setMessages((prev) => (Array.isArray(prev) ? [...prev, optimisticMsg] : [optimisticMsg]));
 
     try {
       const res = await apiFetch<any>(`/chats/${encodeURIComponent(selectedConv.id)}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          conversationId: selectedConv.id,
+          receiverId: selectedConv.participantId,
+          content: text,
+          text,
+        }),
       });
 
-      const actualMsg = res.message || res.data || res;
-      if (actualMsg && actualMsg.id) {
+      const actualMsgRaw = res?.data || (typeof res?.message === "object" ? res.message : null) || res;
+      if (actualMsgRaw && (actualMsgRaw.id || actualMsgRaw._id)) {
+        const actualMsg: Message = {
+          id: actualMsgRaw.id || actualMsgRaw._id,
+          senderId: actualMsgRaw.senderId || user?.id || "me",
+          senderName: actualMsgRaw.senderName,
+          text: actualMsgRaw.text || actualMsgRaw.content || text,
+          createdAt: actualMsgRaw.createdAt || new Date().toISOString(),
+        };
         setMessages((prev) =>
-          prev.map((m) => (m.id === tempId ? actualMsg : m))
+          (Array.isArray(prev) ? prev : []).map((m) => (m.id === tempId ? actualMsg : m))
         );
       }
 
       // Update conversation last message in list
       setConversations((prev) =>
-        prev.map((c) =>
+        (Array.isArray(prev) ? prev : []).map((c) =>
           c.id === selectedConv.id
             ? { ...c, lastMessage: text, lastMessageAt: new Date().toISOString() }
             : c
@@ -196,7 +258,7 @@ export default function ChatPage() {
       );
     } catch {
       // Revert if failed
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setMessages((prev) => (Array.isArray(prev) ? prev.filter((m) => m.id !== tempId) : []));
     }
   }
 
@@ -213,9 +275,8 @@ export default function ChatPage() {
       <div className="h-[750px] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm flex flex-col sm:flex-row">
         {/* Left Sidebar: Conversations */}
         <div
-          className={`w-full sm:w-80 border-r border-neutral-200 flex flex-col ${
-            selectedConv ? "hidden sm:flex" : "flex"
-          }`}
+          className={`w-full sm:w-80 border-r border-neutral-200 flex flex-col ${selectedConv ? "hidden sm:flex" : "flex"
+            }`}
         >
           <div className="border-b border-neutral-200 p-4">
             <h1 className="text-base font-bold text-black">Messages</h1>
@@ -235,9 +296,8 @@ export default function ChatPage() {
 
         {/* Right Pane: Chat Window */}
         <div
-          className={`flex-1 flex flex-col ${
-            !selectedConv ? "hidden sm:flex" : "flex"
-          }`}
+          className={`flex-1 flex flex-col ${!selectedConv ? "hidden sm:flex" : "flex"
+            }`}
         >
           {selectedConv ? (
             <ChatWindow

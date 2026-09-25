@@ -23,24 +23,32 @@ async function getSellerData(id: string): Promise<SellerData | null> {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     if (!apiUrl) return null;
 
-    const res = await fetch(`${apiUrl}/users/${encodeURIComponent(id)}`, {
-      next: { revalidate: 30 },
-    });
+    const res = await fetch(
+      `${apiUrl}/users/${encodeURIComponent(id)}`,
+      {
+        next: { revalidate: 30 },
+      }
+    );
 
     if (!res.ok) return null;
+
     const data = await res.json();
-    const u = data.user || data.data || data;
+    const u = data.user;
+
+    if (!u) return null;
 
     return {
-      id: u.id || u._id || id,
+      id: u._id || u.authId || id,
       name: u.name || "MarketX Seller",
       avatar: u.avatar || "",
-      location: u.location
-        ? typeof u.location === "object"
-          ? `${u.location.city || ""}, ${u.location.state || ""}`.replace(/^, |, $/g, "")
-          : u.location
-        : undefined,
-      createdAt: u.createdAt || new Date().toISOString(),
+      location:
+        typeof u.location === "object"
+          ? `${u.location.city || ""}, ${u.location.state || ""}`.replace(
+            /^, |, $/g,
+            ""
+          )
+          : u.location || undefined,
+      createdAt: u.createdAt,
       isVerified: u.isVerified ?? false,
     };
   } catch {
@@ -76,7 +84,9 @@ async function getSellerListings(sellerId: string): Promise<Listing[]> {
       createdAt: item.createdAt,
       isSaved: item.isSaved ?? false,
     }));
-  } catch {
+  } catch (error) {
+    console.log(error);
+
     return [];
   }
 }

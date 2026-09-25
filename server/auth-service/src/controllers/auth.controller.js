@@ -14,6 +14,25 @@ export const register = async (req, res, next) => {
   try {
     const result = await authService.register(req.body);
 
+    if (result.user?.id) {
+      try {
+        await fetch(`${process.env.USER_SERVICE_URL}/internal/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.INTERNAL_SERVICE_SECRET,
+          },
+          body: JSON.stringify({
+            id: result.user.id,
+            name: result.user.name || req.body.name || "",
+            email: result.user.email,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to create User Service profile:", error);
+      }
+    }
+
     if (result.token) {
       res.cookie("token", result.token, COOKIE_OPTIONS);
     }

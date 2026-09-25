@@ -80,3 +80,22 @@ user-service/
 ├── package.json
 ├── Dockerfile
 └── README.md
+
+
+
+1. User registers
+       ↓
+2. Auth Service creates PostgreSQL user
+       ↓
+3. Auth Service generates userId
+       ↓
+4. Auth Service tells User Service:
+       "Create profile for this userId"
+       ↓
+5. User Service creates MongoDB profile
+       ↓
+6. User logs in
+       ↓
+7. JWT contains userId
+       ↓
+8. Listing uses JWT userId as sellerId

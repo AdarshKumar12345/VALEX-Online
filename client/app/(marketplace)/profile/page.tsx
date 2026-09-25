@@ -28,6 +28,9 @@ export default function ProfilePage() {
       try {
         setFetching(true);
         const data = await apiFetch<any>("/users/me").catch(() => null);
+        if (!data) {
+          console.log("No data found in the user");
+        }
         const u = data?.user || user;
 
         if (u) {
