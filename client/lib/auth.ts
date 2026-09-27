@@ -24,6 +24,19 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     }
 }
 
+export async function refreshTokens(): Promise<AuthUser | null> {
+    try {
+        const response =
+            await apiFetch<AuthResponse>("/auth/refresh", {
+                method: "POST",
+            });
+
+        return response.user ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export async function logout(): Promise<void> {
     try {
         await apiFetch("/auth/logout", {

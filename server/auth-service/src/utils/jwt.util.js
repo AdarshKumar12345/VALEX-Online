@@ -1,14 +1,35 @@
 import jwt from "jsonwebtoken";
 import env from "../config/env.js";
 
-const generateToken = (payload) => {
+const generateAccessToken = (payload) => {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "15m",
   });
 };
 
-const verifyToken = (token) => {
+const generateRefreshToken = (payload) => {
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+const verifyAccessToken = (token) => {
   return jwt.verify(token, env.JWT_SECRET);
 };
 
-export { generateToken, verifyToken };
+const verifyRefreshToken = (token) => {
+  return jwt.verify(token, env.JWT_REFRESH_SECRET);
+};
+
+// Aliases for compatibility
+const generateToken = generateAccessToken;
+const verifyToken = verifyAccessToken;
+
+export {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  generateToken,
+  verifyToken,
+};

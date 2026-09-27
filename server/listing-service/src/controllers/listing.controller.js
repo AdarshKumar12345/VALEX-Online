@@ -5,6 +5,7 @@ import {
     updateListing,
     deleteListing,
 } from "../services/listing.service.js";
+import redisClient from "../config/redis.js";
 
 export const create = async (req, res) => {
     try {
@@ -31,7 +32,11 @@ export const create = async (req, res) => {
             images: allImages,
         };
 
+
         const listing = await createListing(req.user.userId, listingData);
+        await redisClient.del(
+            `my-listings:${req.user.userId}`
+        );
 
         res.status(201).json({
             success: true,
@@ -49,6 +54,17 @@ export const create = async (req, res) => {
 export const getMyListings = async (req, res) => {
     try {
         const userId = req.user.userId;
+
+        const cacheKey = `my-listings:${userId}`;
+
+        const cached = await redisClient.get(cacheKey);
+
+        if (cached) {
+            return res.status(200).json({
+                success: true,
+                ...JSON.parse(cached),
+            });
+        }
         const result = await getListings({
             sellerId: userId,
             status: "all",
@@ -72,6 +88,16 @@ export const getMyListings = async (req, res) => {
             favorites: item.favorites || 0,
             createdAt: item.createdAt,
         }));
+        const responseData = {
+            listings: formattedListings,
+            total: result.total,
+        };
+
+        await redisClient.setEx(
+            cacheKey,
+            60,
+            JSON.stringify(responseData)
+        );
 
         res.status(200).json({
             success: true,
@@ -103,8 +129,21 @@ export const getAll = async (req, res) => {
 export const getOne = async (req, res) => {
     try {
         const id = req.params.id;
+
+
         if (!id || id === "me") {
             return res.status(404).json({ success: false, message: "Listing not found" });
+        }
+
+        const cacheKey = `listing:${id}`;
+
+        const cached = await redisClient.get(cacheKey);
+
+        if (cached) {
+            return res.status(200).json({
+                success: true,
+                listing: JSON.parse(cached),
+            });
         }
 
         const listing = await getListingById(id);
@@ -112,6 +151,11 @@ export const getOne = async (req, res) => {
         if (!listing) {
             return res.status(404).json({ success: false, message: "Listing not found" });
         }
+        await redisClient.setEx(
+            cacheKey,
+            300,
+            JSON.stringify(listing)
+        );
 
         res.status(200).json({
             success: true,
@@ -148,6 +192,11 @@ export const update = async (req, res) => {
             req.user.userId,
             updateData
         );
+        await redisClient.del(`listing:${req.params.id}`);
+
+        await redisClient.del(
+            `my-listings:${req.user.userId}`
+        );
 
         if (!listing) {
             return res.status(404).json({ message: "Listing not found" });
@@ -167,6 +216,11 @@ export const remove = async (req, res) => {
         const listing = await deleteListing(
             req.params.id,
             req.user.userId
+        );
+        await redisClient.del(`listing:${req.params.id}`);
+
+        await redisClient.del(
+            `my-listings:${req.user.userId}`
         );
 
         if (!listing) {

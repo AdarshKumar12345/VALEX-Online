@@ -76,7 +76,9 @@ export default function LoginPage() {
              * Do NOT store access tokens in localStorage.
              */
 
-            window.location.href = "/";
+            const searchParams = new URLSearchParams(window.location.search);
+            const redirectUrl = searchParams.get("redirect") || "/";
+            window.location.href = redirectUrl.startsWith("/") ? redirectUrl : "/";
         } catch (error) {
             setError(
                 error instanceof Error

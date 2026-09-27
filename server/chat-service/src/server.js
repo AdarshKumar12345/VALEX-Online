@@ -15,6 +15,7 @@ import connectDB from "./config/db.js";
 import chatRoutes from "./routes/chat.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import setupChatSocket from "./sockets/chat.socket.js";
+import { connectRedis } from "./config/redis.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -45,6 +46,8 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(morgan("dev"));
+
+await connectRedis();
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -90,7 +93,7 @@ const io = new Server(server, {
     },
 });
 
-setupChatSocket(io);
+await setupChatSocket(io);
 
 // --------------------
 // Start Server

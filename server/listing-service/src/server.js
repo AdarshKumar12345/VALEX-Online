@@ -7,6 +7,7 @@ import path from "path";
 import cookieParser from "cookie-parser";
 
 import connectDB from "./config/db.js";
+import { connectRedis } from "./config/redis.js";
 import listingRoutes from "./routes/listing.routes.js";
 
 dotenv.config();
@@ -22,6 +23,10 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+
+await connectRedis();
+
+
 
 app.use(
     "/uploads",
