@@ -6,9 +6,28 @@ if (!API_URL) {
     );
 }
 
-interface ApiOptions
-    extends RequestInit {
+interface ApiOptions extends RequestInit {
     auth?: boolean;
+    _retry?: boolean;
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function executeTokenRefresh(): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_URL}/auth/refresh`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return response.ok;
+    } catch {
+        return false;
+    } finally {
+        refreshPromise = null;
+    }
 }
 
 export async function apiFetch<T>(
@@ -17,6 +36,7 @@ export async function apiFetch<T>(
 ): Promise<T> {
     const {
         auth = true,
+        _retry = false,
         headers,
         ...fetchOptions
     } = options;
@@ -33,6 +53,30 @@ export async function apiFetch<T>(
             },
         }
     );
+
+    // Auto-refresh token on 401 Unauthorized for authenticated endpoints
+    if (
+        response.status === 401 &&
+        auth &&
+        !_retry &&
+        !endpoint.startsWith("/auth/login") &&
+        !endpoint.startsWith("/auth/register") &&
+        !endpoint.startsWith("/auth/refresh") &&
+        !endpoint.startsWith("/auth/logout")
+    ) {
+        if (!refreshPromise) {
+            refreshPromise = executeTokenRefresh();
+        }
+
+        const refreshed = await refreshPromise;
+
+        if (refreshed) {
+            return apiFetch<T>(endpoint, {
+                ...options,
+                _retry: true,
+            });
+        }
+    }
 
     const contentType =
         response.headers.get("content-type");

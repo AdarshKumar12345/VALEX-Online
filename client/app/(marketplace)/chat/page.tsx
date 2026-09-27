@@ -16,7 +16,7 @@ export default function ChatPage() {
   const listingParam = searchParams.get("listing");
   const recipientParam = searchParams.get("recipient");
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +26,7 @@ export default function ChatPage() {
 
   // Real-time WebSocket connection
   const { emitTyping } = useChatSocket({
+    enabled: Boolean(user?.id && !authLoading),
     conversationId: selectedConv?.id,
     receiverId: selectedConv?.participantId,
     onNewMessage: (newMsg) => {
