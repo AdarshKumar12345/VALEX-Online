@@ -1,6 +1,7 @@
 import * as authService from "../services/auth.service.js";
 import jwt from "jsonwebtoken";
 import prisma from "../config/database.js";
+import redisClient from "../config/redis.js";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -41,8 +42,6 @@ export const register = async (req, res, next) => {
       success: true,
       message: "User registered successfully",
       user: result.user,
-      token: result.token,
-      data: result,
     });
   } catch (error) {
     next(error);
@@ -61,8 +60,6 @@ export const login = async (req, res, next) => {
       success: true,
       message: "Login successful",
       user: result.user,
-      token: result.token,
-      data: result,
     });
   } catch (error) {
     next(error);
@@ -126,6 +123,8 @@ export const logout = async (req, res) => {
     sameSite: "lax",
     path: "/",
   });
+  await redisClient.del(`session:${token}`);
+
 
   res.status(200).json({
     success: true,
